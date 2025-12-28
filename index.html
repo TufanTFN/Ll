@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MD OFFICE PRO | Enterprise</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .hidden { display: none !important; }
+        input, select, button { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; }
+        button { cursor: pointer; background: #2563eb; color: white; border: none; font-weight: 700; font-size: 14px; }
+        .dev-box { border: 3px solid #ef4444; background: #fef2f2; }
+        .nav-bar { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; }
+        .nav-btn { width: auto; background: #475569; white-space: nowrap; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; border: 1px solid #eee; text-align: left; font-size: 13px; }
+        th { background: #f8fafc; color: #64748b; text-transform: uppercase; font-size: 11px; }
+    </style>
+</head>
+<body>
+
+    <div id="loginPage" class="card" style="max-width: 400px; margin: 80px auto; text-align: center;">
+        <h2 style="color:#1e293b;">Secure Access</h2>
+        <input type="email" id="email" placeholder="Email Address">
+        <input type="password" id="pass" placeholder="Password">
+        <button onclick="doLogin()">Sign In</button>
+        <p style="font-size:12px; color:#64748b; margin-top:15px;">Organization MD? <a href="#" onclick="doRegister()">Register Account</a></p>
+    </div>
+
+    <div id="mainApp" class="hidden">
+        <div class="nav-bar">
+            <button class="nav-btn" onclick="showTab('recruitTab')">📋 Recruitment</button>
+            <button id="adminBtn" class="nav-btn hidden" onclick="showTab('adminTab')">⚙️ Admin Settings</button>
+            <button onclick="location.reload()" class="nav-btn" style="background:#dc2626;">Logout</button>
+        </div>
+
+        <div id="recruitTab" class="card">
+            <h3>Candidate Registration</h3>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                <input id="cName" placeholder="Full Name">
+                <input id="cEmail" placeholder="Email">
+                <input id="cPhone" placeholder="Phone">
+                <input id="cPos" placeholder="Role Applied For">
+                <select id="cEdu"><option>OND</option><option>HND</option><option>BSc</option><option>MSc</option></select>
+                <button onclick="submitCandidate()" style="grid-column: span 2; background:#10b981;">Add to Database</button>
+            </div>
+            <br>
+            <table><thead><tr><th>Name</th><th>Role</th><th>Qualification</th></tr></thead><tbody id="tableBody"></tbody></table>
+        </div>
+
+        <div id="adminTab" class="hidden">
+            <div class="card">
+                <h3>Recruiter Management</h3>
+                <p style="font-size:12px;">Create logins for your staff recruiters.</p>
+                <input id="staffEmail" placeholder="Recruiter Email">
+                <input id="staffPass" placeholder="Recruiter Password">
+                <button onclick="createStaff()" style="background:#10b981;">Create Staff Account</button>
+            </div>
+
+            <div class="card">
+                <h3>License Activation</h3>
+                <input id="licKey" placeholder="Paste Activation Key Here">
+                <button onclick="activateLic()" style="background:black;">Upgrade to Premium</button>
+            </div>
+
+            <div id="devConsole" class="card dev-box hidden">
+                <h3 style="color:#b91c1c;">Master Developer Console</h3>
+                <p>Generate a new activation code to sell to this client.</p>
+                <button onclick="generateKey()" style="background:#b91c1c;">GENERATE ACTIVATION CODE</button>
+                <h2 id="keyResult" style="color:#b91c1c; text-align:center; padding:10px; border:2px dashed #b91c1c; margin-top:10px;"></h2>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // !!! CONFIGURATION !!!
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx4V10CvjIOY6yHF_ElI9jARR7y_Nif8o17OTYKtru8ZGK8GCQxH1-wfwjkG9My-Sib/exec";
+
+        let userEmail = "";
+        let userRole = "";
+
+        function showTab(id) {
+            document.getElementById('recruitTab').classList.add('hidden');
+            document.getElementById('adminTab').classList.add('hidden');
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        async function doLogin() {
+            userEmail = document.getElementById('email').value;
+            const pass = document.getElementById('pass').value;
+            const res = await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify({action:'login', email:userEmail, password:pass})});
+            const data = await res.json();
+            
+            if(data.success) {
+                userRole = data.role;
+                document.getElementById('loginPage').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                
+                // If inbuilt DEV or MD, show Admin Settings
+                if(userRole === "DEV" || userRole === "MD") {
+                    document.getElementById('adminBtn').classList.remove('hidden');
+                }
+                
+                // If inbuilt DEV, show the RED Generation box
+                if(userRole === "DEV") {
+                    document.getElementById('devConsole').classList.remove('hidden');
+                    alert("Welcome Developer. Master Mode Active.");
+                }
+                loadCandidates();
+            } else { alert("Login failed. Check your inbuilt credentials."); }
+        }
+
+        async function doRegister() {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('pass').value;
+            if(!email || !pass) return alert("Fill Email and Password first");
+            await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify({action:'register', email, password:pass})});
+            alert("MD Account Created! You can now Login.");
+        }
+
+        async function generateKey() {
+            const res = await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify({action:'create_key', adminEmail:userEmail})});
+            const data = await res.json();
+            document.getElementById('keyResult').innerText = data.key;
+        }
+
+        async function createStaff() {
+            const res = await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify({action:'add_staff', staffEmail:document.getElementById('staffEmail').value, staffPass:document.getElementById('staffPass').value, adminEmail:userEmail})});
+            alert("Staff Login Created!");
+        }
+
+        async function activateLic() {
+            const res = await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify({action:'activate_license', key:document.getElementById('licKey').value})});
+            const data = await res.json();
+            if(data.success) { alert("Premium Active!"); location.reload(); } else { alert("Invalid Key"); }
+        }
+
+        async function submitCandidate() {
+            await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify({action:'submit', name:document.getElementById('cName').value, pos:document.getElementById('cPos').value, edu:document.getElementById('cEdu').value, email:document.getElementById('cEmail').value, phone:document.getElementById('cPhone').value})});
+            alert("Candidate Added!"); loadCandidates();
+        }
+
+        async function loadCandidates() {
+            const res = await fetch(SCRIPT_URL);
+            const data = await res.json();
+            document.getElementById('tableBody').innerHTML = data.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[4]}</td></tr>`).join('');
+        }
+    </script>
+</body>
+</html>
