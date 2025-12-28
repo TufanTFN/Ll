@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MD OFFICE PRO | Enterprise SaaS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root { --blue: #2563eb; --dark: #0f172a; --bg: #f8fafc; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 15px; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #e2e8f0; }
+        .hidden { display: none !important; }
+        input, select, button { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
+        button { cursor: pointer; background: var(--blue); color: white; border: none; font-weight: bold; }
+        .nav-bar { display: flex; gap: 8px; margin-bottom: 20px; background: var(--dark); padding: 10px; border-radius: 10px; overflow-x: auto; }
+        .nav-btn { width: auto; background: transparent; border: 1px solid #334155; padding: 8px 15px; font-size: 12px; }
+        .active-tab { background: var(--blue); border-color: var(--blue); }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; border-radius: 8px; overflow: hidden; }
+        th, td { padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: left; font-size: 13px; }
+        th { background: #f8fafc; color: #64748b; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em; }
+        .dev-box { border: 2px solid #ef4444; background: #fff1f2; }
+    </style>
+</head>
+<body>
+
+    <div id="registerPage" class="card" style="max-width: 400px; margin: 40px auto; text-align: center;">
+        <h2>MD Sign Up</h2>
+        <input type="email" id="regEmail" placeholder="Business Email">
+        <input type="password" id="regPass" placeholder="Create Password">
+        <button onclick="registerMD()" style="background:#10b981;">Create Organization</button>
+        <p style="font-size:12px;">Have an account? <a href="#" onclick="showAuth('login')">Login</a></p>
+    </div>
+
+    <div id="loginPage" class="card hidden" style="max-width: 400px; margin: 40px auto; text-align: center;">
+        <h2>System Login</h2>
+        <input type="email" id="loginEmail" placeholder="Email">
+        <input type="password" id="loginPass" placeholder="Password">
+        <button onclick="doLogin()">Sign In</button>
+        <p style="font-size:12px;">New MD? <a href="#" onclick="showAuth('reg')">Sign Up</a></p>
+    </div>
+
+    <div id="mainApp" class="hidden">
+        <div class="nav-bar">
+            <button class="nav-btn active-tab" onclick="showTab('recruitTab')">📋 Recruitment</button>
+            <button id="adminBtn" class="nav-btn hidden" onclick="showTab('adminTab')">⚙️ Admin Settings</button>
+            <button onclick="location.reload()" class="nav-btn" style="background:#ef4444; margin-left:auto;">Logout</button>
+        </div>
+
+        <div id="recruitTab" class="card">
+            <h3>Candidate Registration</h3>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                <input id="cName" placeholder="Full Name">
+                <input id="cEmail" placeholder="Email">
+                <input id="cPhone" placeholder="Phone">
+                <input id="cPos" placeholder="Role">
+                <select id="cEdu">
+                    <option value="">Qualification</option>
+                    <option>SSCE</option><option>OND</option><option>HND</option>
+                    <option>BSc</option><option>B.Eng</option><option>B.Tech</option>
+                    <option>LLB</option><option>MBBS</option><option>MSc</option>
+                    <option>MBA</option><option>PhD</option>
+                </select>
+                <select id="cGrade">
+                    <option value="">Grade</option>
+                    <option>1st Class</option><option>2:1 (Upper)</option><option>2:2 (Lower)</option>
+                    <option>Distinction</option><option>Upper Credit</option><option>Lower Credit</option>
+                    <option>Pass</option>
+                </select>
+                <select id="cProb">
+                    <option value="None">No Probation</option>
+                    <option>1 Month</option><option>3 Months</option><option>6 Months</option>
+                </select>
+                <button onclick="submitCandidate()" style="grid-column: span 1; background:#10b981;">Save Candidate</button>
+            </div>
+            <table>
+                <thead><tr><th>Name</th><th>Role</th><th>Edu/Grade</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+
+        <div id="adminTab" class="hidden">
+            <div class="card">
+                <h3>Recruiter Account Management (MD)</h3>
+                <input id="staffEmail" placeholder="Recruiter Email">
+                <input id="staffPass" placeholder="Recruiter Password">
+                <button onclick="createStaff()" style="background:#10b981;">Create Staff Login</button>
+            </div>
+
+            <div class="card">
+                <h3>License Activation</h3>
+                <input id="licKey" placeholder="Activation Key">
+                <button onclick="activateLic()" style="background:black;">Activate Premium</button>
+            </div>
+
+            <div id="devConsole" class="card dev-box hidden">
+                <h3 style="color:#ef4444;">Master Developer Panel</h3>
+                <button onclick="generateKey()" style="background:#ef4444;">GENERATE NEW LICENSE KEY</button>
+                <div id="keyResult" style="text-align:center; font-size:24px; font-weight:bold; color:#ef4444; margin-top:10px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx4V10CvjIOY6yHF_ElI9jARR7y_Nif8o17OTYKtru8ZGK8GCQxH1-wfwjkG9My-Sib/exec";
+        let user = { email: "", role: "", isPremium: false };
+
+        function showAuth(type) {
+            document.getElementById('registerPage').classList.toggle('hidden', type !== 'reg');
+            document.getElementById('loginPage').classList.toggle('hidden', type !== 'login');
+        }
+
+        function showTab(id) {
+            document.getElementById('recruitTab').classList.add('hidden');
+            document.getElementById('adminTab').classList.add('hidden');
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        async function registerMD() {
+            await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify({action:'register_md', email:document.getElementById('regEmail').value, password:document.getElementById('regPass').value})});
+            alert("MD Registered! Log in now."); showAuth('login');
+        }
+
+        async function doLogin() {
+            const email = document.getElementById('loginEmail').value, password = document.getElementById('loginPass').value;
+            const res = await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify({action:'login', email, password})});
+            const data = await res.json();
+            if(data.success) {
+                user = { email, role: data.role, isPremium: data.isPremium };
+                document.getElementById('loginPage').classList.add('hidden');
+                document.getElementById('registerPage').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                if(data.role === "MD" || data.role === "DEV") document.getElementById('adminBtn').classList.remove('hidden');
+                if(data.role === "DEV") document.getElementById('devConsole').classList.remove('hidden');
+                loadCandidates();
+            } else alert("Invalid Login");
+        }
+
+        async function updateStatus(name, email, status) {
+            await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify({action:'update_status', name, email, status})});
+            loadCandidates();
+        }
+
+        async function generateKey() {
+            const res = await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify({action:'create_key'})});
+            const data = await res.json();
+            document.getElementById('keyResult').innerText = data.key;
+        }
+
+        async function createStaff() {
+            await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify({action:'add_staff', staffEmail:document.getElementById('staffEmail').value, staffPass:document.getElementById('staffPass').value, adminEmail:user.email})});
+            alert("Recruiter Login Created!");
+        }
+
+        async function activateLic() {
+            const res = await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify({action:'activate_license', key:document.getElementById('licKey').value})});
+            const data = await res.json();
+            if(data.success) location.reload(); else alert("Invalid Key");
+        }
+
+        async function submitCandidate() {
+            const payload = { action:'submit', name:document.getElementById('cName').value, pos:document.getElementById('cPos').value, edu:document.getElementById('cEdu').value, email:document.getElementById('cEmail').value, phone:document.getElementById('cPhone').value, grade:document.getElementById('cGrade').value, probation:document.getElementById('cProb').value };
+            await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify(payload)});
+            loadCandidates();
+        }
+
+        function downloadOffer(name, role, prob) {
+            const { jsPDF } = window.jspdf; const doc = new jsPDF();
+            doc.setFontSize(22); doc.text("OFFER OF EMPLOYMENT", 20, 30);
+            doc.setFontSize(12); doc.text(`Candidate Name: ${name}`, 20, 50);
+            doc.text(`Job Role: ${role}`, 20, 60);
+            doc.text(`Probation Period: ${prob}`, 20, 70);
+            doc.text(`Official Document - Generated by MD Office Enterprise`, 20, 110);
+            doc.save(`${name}_Offer.pdf`);
+        }
+
+        async function loadCandidates() {
+            const res = await fetch(SCRIPT_URL);
+            const data = await res.json();
+            document.getElementById('tableBody').innerHTML = data.map(r => `
+                <tr>
+                    <td><b>${r[0]}</b></td>
+                    <td>${r[1]}</td>
+                    <td>${r[4]} (${r[7]})</td>
+                    <td>
+                        <select onchange="updateStatus('${r[0]}','${r[5]}', this.value)" style="width:auto; font-size:11px;">
+                            <option ${r[2]=='Applied'?'selected':''}>Applied</option>
+                            <option ${r[2]=='Interview'?'selected':''}>Interview</option>
+                            <option ${r[2]=='Hired'?'selected':''}>Hired</option>
+                            <option ${r[2]=='Rejected'?'selected':''}>Rejected</option>
+                        </select>
+                    </td>
+                    <td>
+                        ${(user.role==='MD' || user.role==='DEV') ? `<button onclick="downloadOffer('${r[0]}','${r[1]}','${r[8]}')" style="padding:4px; font-size:10px;">Hire (PDF)</button>` : '---'}
+                    </td>
+                </tr>`).join('');
+        }
+    </script>
+</body>
+</html>
